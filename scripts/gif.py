@@ -3,14 +3,15 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.ndimage import convolve
 
-n = 11
-alpha = -1
+n = 30
+alpha = 1
 beta = 1
 gamma = 0.1
 dt = 1e-1
 
-n = 30
-x_grid, y_grid = np.mgrid[-n // 2 + 1:n // 2 + 1, -n // 2 + 1:n // 2 + 1]
+x_grid, y_grid = np.mgrid[0:n,0:n]
+x_grid = x_grid - n // 2
+y_grid = y_grid - n // 2
 
 theta = np.random.rand(n, n) * 2 * np.pi
 omega = np.zeros((n, n))
@@ -38,9 +39,12 @@ B_mag = np.sqrt(B_x**2 + B_y**2)
 fig, ax = plt.subplots()
 
 def update(frame):
-    global theta, omega, x, y
+    global theta, omega, x, y, beta
 
-    for _ in range(15):
+    if frame == 50:
+        beta = 0
+
+    for _ in range(30):
         x_up = np.roll(x, 1, axis=0)
         x_down = np.roll(x, -1, axis=0)
         x_left = np.roll(x, 1, axis=1)
@@ -60,7 +64,7 @@ def update(frame):
         force_field = np.sin(B_angle - theta) * B_mag
 
         force = alpha * force_nieghbors + beta * force_field
-        friction = gamma * omega
+        friction = gamma * omega 
 
         # Verlet integration
         omega += dt * (force - friction)
@@ -77,7 +81,7 @@ def update(frame):
     ax.clear()
     ax.quiver(x_grid, y_grid, x, y, magnetization, cmap='jet')
 
-ani = animation.FuncAnimation(fig, update, frames=200, interval=5)
+ani = animation.FuncAnimation(fig, update, frames=100, interval=50)
 
 writer = animation.PillowWriter()
-ani.save('images/spin_quiver.gif', writer=writer)
+ani.save(f'images/spin_quiver{n}.gif', writer=writer)
