@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.ndimage import convolve
 
-n = 30
+n = 100
 alpha = 1
 beta = 1
 gamma = 0.1
@@ -14,7 +14,7 @@ x_grid = x_grid - n // 2
 y_grid = y_grid - n // 2
 
 theta = np.random.rand(n, n) * 2 * np.pi
-omega = np.zeros((n, n))
+omega = np.random.rand(n, n) * np.pi / 4
 x = np.cos(theta)
 y = np.sin(theta)
 
@@ -35,6 +35,8 @@ B_x, B_y = B(x_grid, y_grid, a, b, c, d)
 B_angle = np.arctan2(B_y, B_x)
 B_mag = np.sqrt(B_x**2 + B_y**2)
 
+plt.quiver(x_grid, y_grid, B_x, B_y)
+plt.savefig(f'images/B_field{n}.png')
 
 fig, ax = plt.subplots()
 
@@ -74,12 +76,15 @@ def update(frame):
         x = np.cos(theta)
         y = np.sin(theta)
 
-    x_average = convolve(x, np.ones((5, 5)) / 9, mode='wrap')
-    y_average = convolve(y, np.ones((5, 5)) / 9, mode='wrap')
-    magnetization = x_average + y_average
+    n_neighbors = 4
+    x_average = convolve(x, np.ones((n_neighbors, n_neighbors)) / n_neighbors**2, mode='wrap')
+    y_average = convolve(y, np.ones((n_neighbors, n_neighbors)) / n_neighbors**2, mode='wrap')
+
+    magnetization_angle = np.arctan2(y_average, x_average)
+    magnetization_mag = np.sqrt(x_average**2 + y_average**2)
 
     ax.clear()
-    ax.quiver(x_grid, y_grid, x, y, magnetization, cmap='jet')
+    ax.quiver(x_grid, y_grid, x*magnetization_mag, y*magnetization_mag, magnetization_angle, cmap='jet')
 
 ani = animation.FuncAnimation(fig, update, frames=100, interval=50)
 
