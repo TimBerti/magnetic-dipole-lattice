@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.ndimage import convolve
 
-n = 30
+n = 100
 alpha = 1
 beta = 1
 gamma = 1
@@ -75,9 +75,9 @@ def update(frame):
 
         force = alpha * force_nieghbors + beta * force_field
 
-        avg_omega = np.mean(np.abs(omega))
-        thermostat = gamma * (temps[frame * cycles_per_frame + i - 1] - avg_omega) * omega
-        
+        avg_temp = np.mean(omega**2)
+        thermostat = gamma * (temps[frame * cycles_per_frame + i - 1] - avg_temp) * np.sign(omega) # Nose thermostat
+
         # Verlet integration
         omega += dt * (force + thermostat)
         theta += dt * omega
