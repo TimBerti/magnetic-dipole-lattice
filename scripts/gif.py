@@ -3,11 +3,22 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.ndimage import convolve
 
-n = 100
+n = 30
 alpha = 1
 beta = 1
-gamma = 0.1
+gamma = 1
 dt = 1e-1
+n_cycles = 1000
+cycles_per_frame = 10
+
+temps = np.concatenate((
+    np.linspace(1, 0, n_cycles//5), 
+    np.zeros(n_cycles//5), 
+    np.linspace(0, .5, n_cycles//10), 
+    .5*np.ones(n_cycles//5),
+    np.linspace(.5, 0, n_cycles//10),
+    np.zeros(n_cycles//5),
+    ))
 
 x_grid, y_grid = np.mgrid[0:n,0:n]
 x_grid = x_grid - n // 2
@@ -43,10 +54,7 @@ fig, ax = plt.subplots()
 def update(frame):
     global theta, omega, x, y, beta
 
-    if frame == 50:
-        beta = 0
-
-    for _ in range(30):
+    for i in range(cycles_per_frame):
         x_up = np.roll(x, 1, axis=0)
         x_down = np.roll(x, -1, axis=0)
         x_left = np.roll(x, 1, axis=1)
@@ -66,17 +74,22 @@ def update(frame):
         force_field = np.sin(B_angle - theta) * B_mag
 
         force = alpha * force_nieghbors + beta * force_field
-        friction = gamma * omega 
 
+        avg_omega = np.mean(np.abs(omega))
+        thermostat = gamma * (temps[frame * cycles_per_frame + i - 1] - avg_omega) * omega
+        
         # Verlet integration
-        omega += dt * (force - friction)
+        omega += dt * (force + thermostat)
         theta += dt * omega
         theta %= 2 * np.pi
 
         x = np.cos(theta)
         y = np.sin(theta)
 
-    n_neighbors = 4
+    if frame == len(temps)//(2 * cycles_per_frame):
+        beta = 0
+
+    n_neighbors = 5
     x_average = convolve(x, np.ones((n_neighbors, n_neighbors)) / n_neighbors**2, mode='wrap')
     y_average = convolve(y, np.ones((n_neighbors, n_neighbors)) / n_neighbors**2, mode='wrap')
 
@@ -84,9 +97,9 @@ def update(frame):
     magnetization_mag = np.sqrt(x_average**2 + y_average**2)
 
     ax.clear()
-    ax.quiver(x_grid, y_grid, x*magnetization_mag, y*magnetization_mag, magnetization_angle, cmap='jet')
+    ax.quiver(x_grid, y_grid, x*magnetization_mag, y*magnetization_mag, magnetization_angle, cmap='hsv')
 
-ani = animation.FuncAnimation(fig, update, frames=100, interval=50)
+ani = animation.FuncAnimation(fig, update, frames=n_cycles // cycles_per_frame, interval=50)
 
 writer = animation.PillowWriter()
 ani.save(f'images/spin_quiver{n}.gif', writer=writer)
