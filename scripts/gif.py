@@ -76,7 +76,7 @@ def update(frame):
         force = alpha * force_nieghbors + beta * force_field
 
         avg_temp = np.mean(omega**2)
-        thermostat = gamma * (temps[frame * cycles_per_frame + i - 1] - avg_temp) * np.sign(omega) # Nose thermostat
+        thermostat = gamma * (temps[frame * cycles_per_frame + i - 1] - avg_temp) * omega # Nose thermostat
 
         # Verlet integration
         omega += dt * (force + thermostat)
@@ -102,4 +102,4 @@ def update(frame):
 ani = animation.FuncAnimation(fig, update, frames=n_cycles // cycles_per_frame, interval=50)
 
 writer = animation.PillowWriter()
-ani.save(f'images/spin_quiver{n}.gif', writer=writer)
+ani.save(f'images/dipole_quiver{n}.gif', writer=writer)
