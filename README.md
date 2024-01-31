@@ -12,3 +12,6 @@ To calculate the local average of the magnetization, the grid is convolved with 
 
 When plotting the average total magnetization over the temperature, a phase transition can be observed.
 ![images/phase_transition.png](images/phase_transition.png)
+
+When plotting the average total magnetization over an applied magnetic field, a hysteresis loop can be observed.
+![images/hysteresis.png](images/hysteresis.png)
