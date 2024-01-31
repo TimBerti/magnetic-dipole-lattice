@@ -4,8 +4,8 @@ import matplotlib.animation as animation
 from scipy.ndimage import convolve
 
 n = 30
-alpha = -1
-beta = 1
+alpha = 1
+beta = 0
 gamma = 1
 dt = 1e-1
 n_cycles = 1000
