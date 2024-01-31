@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.ndimage import convolve
 
-n = 30
+n = 100
 alpha = 1
 beta = 0
 gamma = 1
@@ -11,7 +11,7 @@ dt = 1e-1
 n_cycles = 1000
 cycles_per_frame = 10
 
-temps = np.concatenate((
+temps = 2 * np.concatenate((
     np.linspace(1, 0, n_cycles//5), 
     np.zeros(n_cycles//5), 
     np.linspace(0, .5, n_cycles//10), 
