@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.ndimage import convolve
 
-n = 100
-alpha = 1
+n = 30
+alpha = -1
 beta = 1
 gamma = 1
 dt = 1e-1
@@ -89,7 +89,7 @@ def update(frame):
     if frame == len(temps)//(2 * cycles_per_frame):
         beta = 0
 
-    n_neighbors = 5
+    n_neighbors = 6
     x_average = convolve(x, np.ones((n_neighbors, n_neighbors)) / n_neighbors**2, mode='wrap')
     y_average = convolve(y, np.ones((n_neighbors, n_neighbors)) / n_neighbors**2, mode='wrap')
 
