@@ -9,7 +9,9 @@ In the above GIF, the magnets are randomly initialized. The temperature then dec
 The colors of the magnets represent the angle of the local magnetization. The length of the arrows is proportional to the magnitude of the local magnetization. To calculate the local average of the magnetization, the lattice is convolved with a constant 5x5 kernel. 
 
 When plotting the total magnetization over the temperature, a phase transition can be observed.
+
 ![images/phase_transition.png](images/phase_transition.png)
 
 When plotting the total magnetization over an applied magnetic field, a hysteresis loop can be observed.
+
 ![images/hysteresis.png](images/hysteresis.png)
