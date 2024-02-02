@@ -25,7 +25,7 @@ x_grid = x_grid - n // 2
 y_grid = y_grid - n // 2
 
 theta = np.random.rand(n, n) * 2 * np.pi
-omega = np.random.rand(n, n) * np.pi / 4
+omega = np.random.randn(n, n) * np.pi / 4
 x = np.cos(theta)
 y = np.sin(theta)
 
