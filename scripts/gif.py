@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.ndimage import convolve
 
-n = 100
+n = 30
 alpha = 1
 beta = 0
 gamma = 1
