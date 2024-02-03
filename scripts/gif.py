@@ -3,103 +3,135 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.ndimage import convolve
 
-n = 30
-alpha = 1
-beta = 0
-gamma = 1
-dt = 1e-1
-n_cycles = 1000
-cycles_per_frame = 10
+n = 100
+n_frames = 100
+steps_per_frame = 10
 
-temps = 2 * np.concatenate((
-    np.linspace(1, 0, n_cycles//5), 
-    np.zeros(n_cycles//5), 
-    np.linspace(0, .5, n_cycles//10), 
-    .5*np.ones(n_cycles//5),
-    np.linspace(.5, 0, n_cycles//10),
-    np.zeros(n_cycles//5),
-    ))
 
-x_grid, y_grid = np.mgrid[0:n,0:n]
-x_grid = x_grid - n // 2
-y_grid = y_grid - n // 2
+def generate_lattice(n=n, temperature=1.0):
+    """
+    Generate a 2D lattice of magnets.
 
-theta = np.random.rand(n, n) * 2 * np.pi
-omega = np.random.randn(n, n) * np.pi / 4
-x = np.cos(theta)
-y = np.sin(theta)
+    Parameters
+    ----------
+    n : int
+        The number of lattice points in each dimension.
+    temperature : float
+        The temperature of the lattice.
+    """
 
-def B(x_grid, y_grid, a, b, c, d):
-    B_x = a * x_grid + b * y_grid
-    B_y = c * x_grid + d * y_grid
+    theta = np.random.rand(n, n) * 2 * np.pi
+    omega = np.random.randn(n, n) * temperature
 
-    B_x = B_x / np.sqrt(x_grid**2 + y_grid**2 + 1e-10)
-    B_y = B_y / np.sqrt(x_grid**2 + y_grid**2 + 1e-10)
-    return B_x, B_y
+    return theta, omega
 
-a, b, c, d = np.random.rand(4) * 2 - 1
+def compute_local_magnetization(theta, kernel_size=5):
+    """
+    Compute the local magnetization of a 2D lattice of magnets.
 
-print(f'B_x = ({a:.2f}x + {b:.2f}y) / sqrt(x^2 + y^2)')
-print(f'B_y = ({c:.2f}x + {d:.2f}y) / sqrt(x^2 + y^2)')
+    Parameters
+    ----------
+    theta : array_like
+        The angles of the magnets.
+    kernel_size : int
+        The size of the kernel to use for the local average.
+    """
 
-B_x, B_y = B(x_grid, y_grid, a, b, c, d)
-B_angle = np.arctan2(B_y, B_x)
-B_mag = np.sqrt(B_x**2 + B_y**2)
+    kernel = np.ones((kernel_size, kernel_size)) / kernel_size**2
+    x = np.cos(theta)
+    y = np.sin(theta)
+    local_average_x = convolve(x, kernel, mode='wrap')
+    local_average_y = convolve(y, kernel, mode='wrap')
 
-plt.quiver(x_grid, y_grid, B_x, B_y)
-plt.savefig(f'images/B_field{n}.png')
+    magnetization_angle = np.arctan2(local_average_y, local_average_x)
+    magnetization_magnitude = np.sqrt(local_average_x**2 + local_average_y**2)
 
-fig, ax = plt.subplots()
+    return magnetization_angle, magnetization_magnitude
 
-def update(frame):
-    global theta, omega, x, y, beta
+def update_lattice(theta, omega, field=None, target_temp=1.0, alpha=1, beta=0, gamma=1, dt=0.1):
+    """
+    Update the state of the lattice using the Nose-Hoover thermostat.
 
-    for i in range(cycles_per_frame):
-        x_up = np.roll(x, 1, axis=0)
-        x_down = np.roll(x, -1, axis=0)
-        x_left = np.roll(x, 1, axis=1)
-        x_right = np.roll(x, -1, axis=1)
+    Parameters
+    ----------
+    theta : array_like
+        The angles of the magnets.
+    omega : array_like
+        The angular velocities of the magnets.
+    field : tuple of array_like, optional
+        The external magnetic field.
+    target_temp : float
+        The target temperature of the thermostat.
+    alpha : float
+        The strength of the interaction between magnets.
+    beta :  float
+        The strength of the interaction with the external field.
+    gamma : float
+        The strength of the thermostat.
+    dt : float
+        The time step.
+    """
 
-        y_up = np.roll(y, 1, axis=0)
-        y_down = np.roll(y, -1, axis=0)
-        y_left = np.roll(y, 1, axis=1)
-        y_right = np.roll(y, -1, axis=1)
+    # Force from neighboursb with periodic boundary conditions
 
-        x_neighbors = x_right + x_left + x_up + x_down
-        y_neighbors = y_right + y_left + y_up + y_down
+    theta_up = np.roll(theta, 1, axis=0)
+    theta_down = np.roll(theta, -1, axis=0)
+    theta_left = np.roll(theta, 1, axis=1)
+    theta_right = np.roll(theta, -1, axis=1)
 
-        theta_neighbors = np.arctan2(y_neighbors, x_neighbors)
+    x_neighbours = np.cos(theta_up) + np.cos(theta_down) + np.cos(theta_left) + np.cos(theta_right)
+    y_neighbours = np.sin(theta_up) + np.sin(theta_down) + np.sin(theta_left) + np.sin(theta_right)
 
-        force_nieghbors = np.sin(theta_neighbors - theta)
-        force_field = np.sin(B_angle - theta) * B_mag
+    theta_neighbours = np.arctan2(y_neighbours, x_neighbours)
+    force = alpha * np.sin(theta_neighbours - theta)
 
-        force = alpha * force_nieghbors + beta * force_field
+    # Force from external field
 
-        avg_temp = np.mean(omega**2)
-        thermostat = gamma * (temps[frame * cycles_per_frame + i - 1] - avg_temp) * omega # Nose thermostat
+    if field is not None:
+        field_x, field_y = field
+        field_angle = np.arctan2(field_y, field_x)
+        field_mag = np.sqrt(field_x**2 + field_y**2)
+        force += beta * np.sin(field_angle - theta) * field_mag
 
-        # Verlet integration
-        omega += dt * (force + thermostat)
-        theta += dt * omega
-        theta %= 2 * np.pi
+    # Nose thermostat
 
-        x = np.cos(theta)
-        y = np.sin(theta)
+    avg_temp = np.mean(omega**2)
+    thermostat = gamma * (target_temp - avg_temp) * omega
 
-    if frame == len(temps)//(2 * cycles_per_frame):
-        beta = 0
+    # Verlet integration
 
-    n_neighbors = 6
-    x_average = convolve(x, np.ones((n_neighbors, n_neighbors)) / n_neighbors**2, mode='wrap')
-    y_average = convolve(y, np.ones((n_neighbors, n_neighbors)) / n_neighbors**2, mode='wrap')
+    omega += (force + thermostat) * dt
+    theta += omega * dt
 
-    magnetization_angle = np.arctan2(y_average, x_average)
-    magnetization_mag = np.sqrt(x_average**2 + y_average**2)
+    # Angle back to [0, 2pi]
 
+    theta = np.mod(theta, 2 * np.pi)
+
+    return theta, omega
+
+def update(ax, frame):
+    global theta, omega
+    for _ in range(steps_per_frame):
+        theta, omega = update_lattice(theta, omega, target_temp=target_temperatures[frame])
+    magnetization_angle, magnetization_mag = compute_local_magnetization(theta)
     ax.clear()
-    ax.quiver(x_grid, y_grid, x*magnetization_mag, y*magnetization_mag, magnetization_angle, cmap='hsv')
+    ax.quiver(np.cos(theta)*magnetization_mag, np.sin(theta)*magnetization_mag, magnetization_angle, cmap='hsv')
 
-ani = animation.FuncAnimation(fig, update, frames=n_cycles // cycles_per_frame, interval=50)
 
-writer = animation.PillowWriter()
-ani.save(f'images/dipole_quiver{n}.gif', writer=writer)
+if __name__ == '__main__':
+
+    theta, omega = generate_lattice(n=n)
+    target_temperatures = 2 * np.concatenate((
+        np.linspace(1, 0, n_frames//5), 
+        np.zeros(n_frames//5), 
+        np.linspace(0, .5, n_frames//10), 
+        .5*np.ones(n_frames//5),
+        np.linspace(.5, 0, n_frames//10),
+        np.zeros(n_frames//5),
+        ))
+
+    fig, ax = plt.subplots()
+    ani = animation.FuncAnimation(fig, lambda frame: update(ax, frame), frames=n_frames, interval=50)
+
+    writer = animation.PillowWriter()
+    ani.save(f'images/dipole_quiver{n}.gif', writer=writer)
