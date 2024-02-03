@@ -72,7 +72,7 @@ def update_lattice(theta, omega, field=None, target_temp=1.0, alpha=1, beta=0, g
         The time step.
     """
 
-    # Force from neighboursb with periodic boundary conditions
+    # Force from neighbours with periodic boundary conditions
 
     theta_up = np.roll(theta, 1, axis=0)
     theta_down = np.roll(theta, -1, axis=0)
